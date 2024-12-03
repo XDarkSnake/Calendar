@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendrier de Couleurs</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+
+        #calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin: 20px auto;
+            max-width: 700px;
+        }
+
+        .day {
+            border: 1px solid #ddd;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .day.selected {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        /* Vue par semaine (une rangée) */
+        .week-view .day {
+            display: block;
+        }
+
+        /* Vue par mois (par défaut, tous les jours visibles) */
+        .month-view .day {
+            display: block;
+        }
+
+        /* Vue par année (12 mois alignés en grille) */
+        .year-view .day {
+            display: inline-block;
+            width: calc(100% / 12);
+            font-size: smaller;
+            margin: 2px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Calendrier de Couleurs</h1>
+    <div>
+        <label for="colorPicker">Choisir une couleur :</label>
+        <input type="color" id="colorPicker">
+    </div>
+    <div id="calendar-view">
+        <button id="viewWeek">Vue Semaine</button>
+        <button id="viewMonth">Vue Mois</button>
+        <button id="viewYear">Vue Année</button>
+    </div>
+    <div id="calendar"></div>
+    <button id="resetColors">Réinitialiser</button>
+    <script>
+        const calendar = document.getElementById('calendar');
+        const colorPicker = document.getElementById('colorPicker');
+        const viewWeekBtn = document.getElementById('viewWeek');
+        const viewMonthBtn = document.getElementById('viewMonth');
+        const viewYearBtn = document.getElementById('viewYear');
+        const resetColorsBtn = document.getElementById('resetColors');
+
+        // Initialisation du calendrier
+        const today = new Date();
+        const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+        const selectedColors = {};
+
+        // Générer les jours du mois
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'day';
+            dayDiv.textContent = day;
+            dayDiv.dataset.date = `${today.getFullYear()}-${today.getMonth() + 1}-${day}`;
+            dayDiv.addEventListener('click', () => {
+                const color = colorPicker.value;
+                dayDiv.style.backgroundColor = color;
+                selectedColors[dayDiv.dataset.date] = color;
+                saveData();
+            });
+            calendar.appendChild(dayDiv);
+        }
+
+        // Sauvegarder les couleurs dans localStorage
+        function saveData() {
+            localStorage.setItem('calendarColors', JSON.stringify(selectedColors));
+        }
+
+        // Charger les couleurs depuis localStorage
+        function loadData() {
+            const savedColors = JSON.parse(localStorage.getItem('calendarColors') || '{}');
+            for (const date in savedColors) {
+                const dayDiv = document.querySelector(`[data-date="${date}"]`);
+                if (dayDiv) {
+                    dayDiv.style.backgroundColor = savedColors[date];
+                }
+            }
+        }
+
+        loadData();
+
+        // Changer la vue
+        viewWeekBtn.addEventListener('click', () => switchView('week'));
+        viewMonthBtn.addEventListener('click', () => switchView('month'));
+        viewYearBtn.addEventListener('click', () => switchView('year'));
+
+        function switchView(view) {
+            calendar.className = ''; // Réinitialise les classes
+            calendar.classList.add(`${view}-view`);
+            if (view === 'week') {
+                renderWeekView();
+            } else if (view === 'year') {
+                renderYearView();
+            } else {
+                renderMonthView();
+            }
+        }
+
+        // Afficher uniquement le mois actuel
+        function renderMonthView() {
+            const days = calendar.querySelectorAll('.day');
+            days.forEach(day => (day.style.display = 'block'));
+        }
+
+        // Afficher uniquement une semaine spécifique
+        function renderWeekView() {
+            const days = calendar.querySelectorAll('.day');
+            days.forEach(day => {
+                const dayDate = new Date(day.dataset.date);
+                const weekStart = new Date(today.setDate(today.getDate() - today.getDay()));
+                const weekEnd = new Date(today.setDate(today.getDate() + (6 - today.getDay())));
+                day.style.display = dayDate >= weekStart && dayDate <= weekEnd ? 'block' : 'none';
+            });
+        }
+
+        // Vue annuelle (afficher tous les mois)
+        function renderYearView() {
+            const days = calendar.querySelectorAll('.day');
+            days.forEach(day => {
+                day.style.display = 'inline-block';
+                day.style.width = '30px';
+            });
+        }
+
+        // Réinitialiser les couleurs
+        resetColorsBtn.addEventListener('click', () => {
+            if (confirm('Voulez-vous vraiment réinitialiser toutes les couleurs ?')) {
+                localStorage.removeItem('calendarColors');
+                const days = document.querySelectorAll('.day');
+                days.forEach(day => (day.style.backgroundColor = ''));
+            }
+        });
+    </script>
+</body>
+</html>
